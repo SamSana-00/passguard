@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PassGuard — Password Strength Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #060d1a;
+    --card: #0c1629;
+    --card2: #111e36;
+    --border: rgba(55,138,221,0.18);
+    --accent: #378ADD;
+    --accent2: #185FA5;
+    --text: #e8f0fb;
+    --muted: rgba(232,240,251,0.45);
+    --danger: #E24B4A;
+    --warn: #EF9F27;
+    --ok: #1D9E75;
+    --great: #639922;
+    --font-head: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-head);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* animated grid bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(55,138,221,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(55,138,221,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* glow blobs */
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .blob1 { width: 400px; height: 400px; background: #185FA5; top: -100px; left: -100px; }
+  .blob2 { width: 300px; height: 300px; background: #0a3a6e; bottom: 0; right: -80px; }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 3rem 1.2rem 4rem;
+  }
+
+  /* header */
+  header { text-align: center; margin-bottom: 2.5rem; animation: fadeUp 0.6s ease both; }
+  .logo { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text { font-size: 20px; font-weight: 700; letter-spacing: 2px; color: var(--text); }
+  .logo-text span { color: var(--accent); }
+  h1 { font-size: clamp(28px, 6vw, 40px); font-weight: 700; line-height: 1.15; margin-bottom: 0.6rem; }
+  h1 span { color: var(--accent); }
+  .tagline { font-size: 14px; color: var(--muted); font-family: var(--font-mono); letter-spacing: 0.5px; }
+
+  /* card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.2rem;
+    animation: fadeUp 0.6s ease 0.1s both;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  /* input */
+  .input-wrap { position: relative; margin-bottom: 1.2rem; }
+  .pw-input {
+    width: 100%;
+    padding: 15px 56px 15px 18px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 16px;
+    font-family: var(--font-mono);
+    outline: none;
+    transition: border 0.2s, background 0.2s;
+  }
+  .pw-input:focus { border-color: var(--accent); background: rgba(55,138,221,0.06); }
+  .pw-input::placeholder { color: rgba(255,255,255,0.2); font-family: var(--font-head); font-size: 14px; }
+  .eye-btn {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-family: var(--font-mono); font-size: 11px; padding: 4px 6px;
+    transition: color 0.2s;
+  }
+  .eye-btn:hover { color: var(--text); }
+
+  /* strength bar */
+  .bar-track {
+    height: 5px; background: rgba(255,255,255,0.08);
+    border-radius: 3px; overflow: hidden; margin-bottom: 1rem;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 3px; width: 0%;
+    transition: width 0.4s cubic-bezier(.4,0,.2,1), background 0.3s;
+    background: var(--danger);
+  }
+
+  /* strength info row */
+  .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.4rem; }
+  .strength-text { font-size: 15px; font-weight: 600; font-family: var(--font-mono); color: var(--text); transition: color 0.3s; }
+  .score-text { font-size: 12px; font-family: var(--font-mono); color: var(--muted); }
+
+  /* stats grid */
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.4rem; }
+  .stat {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .stat-label { font-size: 10px; font-family: var(--font-mono); color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+  .stat-val { font-size: 16px; font-weight: 600; color: var(--text); font-family: var(--font-mono); transition: color 0.3s; }
+
+  /* suggestions */
+  .sug-box {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .sug-box .section-label { margin-bottom: 8px; }
+  .sug-item {
+    display: flex; gap: 8px; align-items: flex-start;
+    font-size: 13px; color: rgba(232,240,251,0.7);
+    font-family: var(--font-mono); padding: 4px 0; line-height: 1.5;
+  }
+  .sug-item .arr { color: var(--accent); flex-shrink: 0; }
+  .sug-ok { color: var(--ok); font-size: 13px; font-family: var(--font-mono); }
+
+  /* divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 0 0 1.4rem; }
+
+  /* generator section */
+  .gen-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    animation: fadeUp 0.6s ease 0.2s both;
+  }
+
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .slider-label { font-size: 12px; font-family: var(--font-mono); color: var(--muted); width: 56px; flex-shrink: 0; }
+  input[type=range] {
+    flex: 1; -webkit-appearance: none; height: 4px;
+    background: rgba(255,255,255,0.1); border-radius: 2px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px;
+    background: var(--accent); border-radius: 50%; cursor: pointer;
+    transition: background 0.2s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover { background: #5ba3e8; }
+  .slider-val { font-size: 13px; font-family: var(--font-mono); color: var(--text); width: 24px; text-align: right; }
+
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .chk-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-family: var(--font-mono); color: var(--muted);
+    cursor: pointer; transition: color 0.2s;
+  }
+  .chk-label:hover { color: var(--text); }
+  .chk-label input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; }
+
+  .gen-btn {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none; border-radius: 10px;
+    color: #fff; font-size: 13px; font-weight: 700;
+    font-family: var(--font-mono); letter-spacing: 2px;
+    cursor: pointer; transition: opacity 0.2s, transform 0.15s;
+    text-transform: uppercase;
+  }
+  .gen-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .gen-btn:active { transform: translateY(0); }
+
+  .gen-output {
+    display: none; align-items: center; gap: 10px;
+    background: rgba(55,138,221,0.07);
+    border: 1px solid rgba(55,138,221,0.25);
+    border-radius: 10px; padding: 14px 16px; margin-top: 12px;
+  }
+  .gen-pw { flex: 1; font-family: var(--font-mono); font-size: 14px; color: var(--text); word-break: break-all; }
+  .copy-btn {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px; color: var(--muted);
+    font-size: 11px; font-family: var(--font-mono);
+    padding: 5px 10px; cursor: pointer; flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  /* footer */
+  footer {
+    text-align: center; margin-top: 2.5rem;
+    font-size: 12px; font-family: var(--font-mono);
+    color: rgba(232,240,251,0.25);
+    animation: fadeUp 0.6s ease 0.3s both;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+
+<div class="wrapper">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🔐</div>
+      <div class="logo-text">Pass<span>Guard</span></div>
+    </div>
+    <h1>How strong is your<br><span>password?</span></h1>
+
+  </header>
+
+  <div class="card">
+    <div class="section-label">// check password strength</div>
+
+    <div class="input-wrap">
+      <input class="pw-input" id="pwInput" type="password" placeholder="Enter your password..." oninput="analyze()" autocomplete="off" />
+      <button class="eye-btn" id="eyeBtn" onclick="toggleVis()">SHOW</button>
+    </div>
+
+    <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
+
+    <div class="info-row">
+      <span class="strength-text" id="strengthText">— waiting</span>
+      <span class="score-text" id="scoreText">0 / 5</span>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">crack time</div>
+        <div class="stat-val" id="crackVal">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">status</div>
+        <div class="stat-val" id="statusVal">—</div>
+      </div>
+    </div>
+
+    <div class="sug-box">
+      <div class="section-label">// suggestions</div>
+      <div id="sugList">
+        <div class="sug-item" style="color:rgba(232,240,251,0.25)">Start typing to see feedback...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="gen-card">
+    <div class="section-label">// generate strong password</div>
+
+    <div class="slider-row">
+      <span class="slider-label">length</span>
+      <input type="range" min="8" max="32" value="16" id="lenSlider" step="1" oninput="document.getElementById('lenVal').textContent=this.value">
+      <span class="slider-val" id="lenVal">16</span>
+    </div>
+
+    <div class="checks">
+      <label class="chk-label"><input type="checkbox" id="chkU" checked> Uppercase</label>
+      <label class="chk-label"><input type="checkbox" id="chkL" checked> Lowercase</label>
+      <label class="chk-label"><input type="checkbox" id="chkN" checked> Numbers</label>
+      <label class="chk-label"><input type="checkbox" id="chkS" checked> Symbols</label>
+    </div>
+
+    <button class="gen-btn" onclick="generate()">Generate Password</button>
+
+    <div class="gen-output" id="genOut">
+      <span class="gen-pw" id="genPw"></span>
+      <button class="copy-btn" id="copyBtn" onclick="copyPw()">COPY</button>
+    </div>
+  </div>
+
+
+
+</div>
+
+<script>
+const COMMON = ["password","password123","123456","123456789","qwerty","abc123","letmein","monkey","dragon","111111","baseball","iloveyou","master","sunshine","welcome","admin","login","shadow","superman","football","passw0rd","1234567","12345678","12345","123123"];
+
+function fmtTime(s) {
+  if (s < 1) return "instantly";
+  if (s < 60) return Math.round(s) + " sec";
+  if (s < 3600) return Math.round(s/60) + " min";
+  if (s < 86400) return Math.round(s/3600) + " hrs";
+  if (s < 31536000) return Math.round(s/86400) + " days";
+  if (s < 3.154e9) return Math.round(s/31536000) + " years";
+  return "centuries";
+}
+
+function analyze() {
+  const pw = document.getElementById('pwInput').value;
+  if (!pw) { resetUI(); return; }
+
+  if (COMMON.includes(pw.toLowerCase())) {
+    renderUI(0, "COMPROMISED", "#E24B4A", "instantly", "Blacklisted", [
+      "This is one of the most common passwords!",
+      "Hackers try these first — change it now"
+    ]);
+    return;
+  }
+
+  let score = 0, tips = [];
+  if (pw.length >= 8) score++; else tips.push("Use at least 8 characters");
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++; else tips.push("Add an uppercase letter (A-Z)");
+  if (/[0-9]/.test(pw)) score++; else tips.push("Add at least one number");
+  if (/[!@#$%^&*()\-_=+\[\]{};:'",.<>?\/\\|`~]/.test(pw)) score++; else tips.push("Add a special character (!@#$ etc)");
+
+  let cs = 0;
+  if (/[a-z]/.test(pw)) cs += 26;
+  if (/[A-Z]/.test(pw)) cs += 26;
+  if (/[0-9]/.test(pw)) cs += 10;
+  if (/[!@#$%^&*()\-_=+\[\]{};:'",.<>?\/\\|`~]/.test(pw)) cs += 32;
+  const secs = cs > 0 ? Math.pow(cs, pw.length) / 1e9 : 0;
+
+  const cap = Math.min(score, 5);
+  const LABELS = ["","WEAK","WEAK","MEDIUM","STRONG","VERY STRONG"];
+  const COLORS = ["#E24B4A","#E24B4A","#E24B4A","#EF9F27","#1D9E75","#639922"];
+  const STATUS = ["","Vulnerable","Vulnerable","Fair","Protected","Excellent"];
+
+  renderUI(cap, LABELS[cap], COLORS[cap], fmtTime(secs), STATUS[cap], tips);
+}
+
+function renderUI(score, label, color, crack, status, tips) {
+  document.getElementById('barFill').style.width = (score/5*100) + '%';
+  document.getElementById('barFill').style.background = color;
+  const st = document.getElementById('strengthText');
+  st.textContent = label;
+  st.style.color = color;
+  document.getElementById('scoreText').textContent = score + ' / 5';
+  document.getElementById('crackVal').textContent = crack;
+  const sv = document.getElementById('statusVal');
+  sv.textContent = status;
+  sv.style.color = color;
+
+  const list = document.getElementById('sugList');
+  if (tips.length === 0) {
+    list.innerHTML = '<div class="sug-ok">✓ Great password! You are well protected.</div>';
+  } else {
+    list.innerHTML = tips.map(t => `<div class="sug-item"><span class="arr">→</span>${t}</div>`).join('');
+  }
+}
+
+function resetUI() {
+  document.getElementById('barFill').style.width = '0%';
+  document.getElementById('strengthText').textContent = '— waiting';
+  document.getElementById('strengthText').style.color = 'var(--text)';
+  document.getElementById('scoreText').textContent = '0 / 5';
+  document.getElementById('crackVal').textContent = '—';
+  document.getElementById('statusVal').textContent = '—';
+  document.getElementById('statusVal').style.color = 'var(--text)';
+  document.getElementById('sugList').innerHTML = '<div class="sug-item" style="color:rgba(232,240,251,0.25)">Start typing to see feedback...</div>';
+}
+
+function toggleVis() {
+  const inp = document.getElementById('pwInput');
+  const btn = document.getElementById('eyeBtn');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? 'SHOW' : 'HIDE';
+}
+
+function generate() {
+  const len = parseInt(document.getElementById('lenSlider').value);
+  let chars = '';
+  if (document.getElementById('chkU').checked) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  if (document.getElementById('chkL').checked) chars += 'abcdefghijklmnopqrstuvwxyz';
+  if (document.getElementById('chkN').checked) chars += '0123456789';
+  if (document.getElementById('chkS').checked) chars += '!@#$%^&*()-_=+';
+  if (!chars) chars = 'abcdefghijklmnopqrstuvwxyz';
+  let pw = '';
+  for (let i = 0; i < len; i++) pw += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('genPw').textContent = pw;
+  document.getElementById('genOut').style.display = 'flex';
+  document.getElementById('copyBtn').textContent = 'COPY';
+}
+
+function copyPw() {
+  navigator.clipboard.writeText(document.getElementById('genPw').textContent).then(() => {
+    document.getElementById('copyBtn').textContent = 'COPIED!';
+    setTimeout(() => document.getElementById('copyBtn').textContent = 'COPY', 2000);
+  });
+}
+</script>
+</body>
+</html>
