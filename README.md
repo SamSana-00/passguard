@@ -2,7 +2,7 @@
 
 A cybersecurity tool that analyzes password strength in real time, estimates crack time, and generates secure passwords.
 
-🔗 **Live Demo**: [SamSana-00.github.io/passguard](https://your-username.github.io/passguard)
+🔗 **Live Demo**: https://samsana-00.github.io/passguard/
 
 ---
 
@@ -20,7 +20,8 @@ A cybersecurity tool that analyzes password strength in real time, estimates cra
 
 ## Screenshots
 
-> *(Add screenshots of your app here after deploying)*
+<img width="1766" height="1027" alt="image" src="https://github.com/user-attachments/assets/d01ca288-add2-4b06-abe3-09959790afde" />
+
 
 ---
 
