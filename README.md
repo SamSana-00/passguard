@@ -2,7 +2,7 @@
 
 A cybersecurity tool that analyzes password strength in real time, estimates crack time, and generates secure passwords.
 
-🔗 **Live Demo**: [your-username.github.io/passguard](https://your-username.github.io/passguard)
+🔗 **Live Demo**: [SamSana-00.github.io/passguard](https://your-username.github.io/passguard)
 
 ---
 
@@ -86,23 +86,16 @@ python password_checker.py
 - Password security fundamentals (entropy, charset size, brute-force estimation)
 - Python scripting with `re` and `tkinter`
 - Building real-time interactive web tools with vanilla JavaScript
-- Cybersecurity concepts from IBM SkillsBuild program
+
 
 ---
 
-## Certificate
-
-This project was built as part of the **IBM SkillsBuild Cybersecurity Fundamentals** course, completed on March 25, 2026.
-
-Verified badge: [View on Credly](https://www.credly.com/badges/815628ec-7e81-48d5-b2b6-95f19ca15c34)
-
----
 
 ## Author
 
 **Samreen Sana**  
 Sree Chaitanya College of Engineering, Karimnagar, Telangana  
-[LinkedIn](https://linkedin.com/in/your-profile) · [GitHub](https://github.com/your-username)
+[LinkedIn](https://linkedin.com/in/samreensana) · [GitHub](https://github.com/SamSana-00)
 
 ---
 
